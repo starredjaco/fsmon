@@ -245,8 +245,8 @@ static void help (const char *argv0) {
 		" -J        output in JSON stream format\n"
 		" -L        list all filemonitor backends\n"
 		" -n        do not use colors\n"
-		" -p [pid]  only show events from this pid\n"
-		" -P [proc] events only from process name\n"
+		" -p [pid]  only show events from this pid (Linux: requires -B fanotify)\n"
+		" -P [proc] events only from process name (Linux: requires -B fanotify)\n"
 		" -t        show timestamps in default logs\n"
 		" -v        show version\n"
 		" [path]    only get events from this path\n"
@@ -350,6 +350,14 @@ int main (int argc, char **argv) {
 		eprintf ("-c requires -p\n");
 		return 1;
 	}
+#if __linux__
+	if ((fm.pid || fm.proc) && fm.backend.name && !strcmp (fm.backend.name, "inotify")) {
+		eprintf ("Error: the inotify backend cannot filter by -p/-P because the Linux\n"
+		         "       inotify API does not report the originating process. Use\n"
+		         "       '-B fanotify' (requires root and Linux 2.6.37+) or drop the filter.\n");
+		return 1;
+	}
+#endif
 	if (fm.json && !fm.jsonStream) {
 		printf ("[");
 	}
